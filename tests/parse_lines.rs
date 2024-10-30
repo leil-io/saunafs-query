@@ -17,9 +17,9 @@ fn test_written_parse() {
 
 #[cfg(test)]
 pub mod test_utils {
-    use saunafs_query_changelog::parse_line;
-    use saunafs_query_changelog::ChangelogResults;
-    use saunafs_query_changelog::TimestampRange;
+    use saunafs_query::parse_line;
+    use saunafs_query::ChangelogResults;
+    use saunafs_query::TimestampRange;
 
     pub fn new_results(test_str: &str) -> (TimestampRange, ChangelogResults) {
         let mut timestamp = TimestampRange {
