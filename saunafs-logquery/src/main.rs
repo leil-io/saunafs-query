@@ -1,8 +1,8 @@
-use std::process::{exit, Command};
+use std::process::{Command, exit};
 
 use chrono::NaiveDateTime;
 use clap::Parser;
-use saunafs_query::{run, TimestampRange};
+use saunafs_logquery::{TimestampRange, run};
 
 /// CLI parser
 /// Uses the `clap` library to parse command line arguments

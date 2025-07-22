@@ -1,5 +1,4 @@
 pub mod output;
-pub mod parser;
 
 use std::{
     collections::HashMap,
