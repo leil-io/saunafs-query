@@ -1,3 +1,5 @@
+use std::u64;
+
 use chrono::NaiveDateTime;
 
 /// Struct to hold the parsed line information
@@ -51,7 +53,7 @@ impl<'a> Parser<'a> {
             .ok_or("Could not find ',' in length operation line")?;
         let inode: u64 = numbers_comma_slice[..comma]
             .parse()
-            .map_err(|_| "Failed to parse inode into u64 in lenght operation.")?;
+            .map_err(|_| "Failed to parse inode into u64 in length peration.")?;
         let length: u64 = numbers_comma_slice[comma + 1..]
             .parse()
             .map_err(|_| "Failed to parse length into u64.")?;
@@ -109,12 +111,28 @@ fn parse_id(line: &str) -> Result<u64, &'static str> {
 }
 
 /// Parse the inode number from a log line, if possible.
-/// Does not return an inode for WRITE or TRUNC operations, since this function only uses the `):`
-/// at the end of the line to find the inode. The `WRITE` and `TRUNC` operations use temporary
-/// inodes at the end.
 fn parse_inode(line: &str, operation: &str) -> Option<u64> {
     match operation {
-        "WRITE" | "TRUNC" => return None,
+        "WRITE" | "TRUNC" => {
+            let start = line.find('(');
+            if start.is_none() {
+                eprintln!("Could not find '(' in WRITE/TRUNC operation");
+                return None;
+            }
+            let end = line.find(',');
+            if end.is_none() {
+                eprintln!("Could not find ',' in WRITE/TRUNC operation");
+                return None;
+            }
+            match line[start.unwrap() + 1..end.unwrap()]
+                .parse::<u64>() {
+                Ok(inode) => return Some(inode),
+                Err(e) => {
+                    eprintln!("Could not parse line for inode: {e}, line: {line}");
+                    return None;
+                }
+            }
+        }
         _ => (),
     }
     let parts: Vec<&str> = line.split("):").collect();
@@ -123,10 +141,7 @@ fn parse_inode(line: &str, operation: &str) -> Option<u64> {
     }
 
     let inode_str = parts[1].trim();
-    match inode_str.parse::<u64>() {
-        Ok(inode) => Some(inode),
-        Err(_) => None,
-    }
+    inode_str.parse::<u64>().ok()
 }
 
 /// Parse the operation from a log line.
@@ -157,7 +172,7 @@ fn test_parse_inodes() {
 
     assert_eq!(Some(2), parse_inode(create, "CREATE"));
     assert_eq!(Some(1), parse_inode(session, "SESSION"));
-    assert_eq!(None, parse_inode(write, "WRITE"));
-    assert_eq!(None, parse_inode(trunc, "TRUNC"));
+    assert_eq!(Some(3), parse_inode(write, "WRITE"));
+    assert_eq!(Some(4), parse_inode(trunc, "TRUNC"));
     assert_eq!(Some(3), parse_inode(unlink, "UNLINK"));
 }

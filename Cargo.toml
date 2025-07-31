@@ -1,3 +1,7 @@
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+
 [workspace]
 resolver = "3"
-members = ["parser", "saunafs-logquery"]
+members = ["parser", "saunafs-inotify", "saunafs-logquery"]
