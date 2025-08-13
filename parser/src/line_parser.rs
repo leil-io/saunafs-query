@@ -133,6 +133,7 @@ fn parse_inode(line: &str, operation: &str) -> Option<u64> {
                 }
             }
         }
+        "CHECKSUM" => return None,
         _ => (),
     }
     let parts: Vec<&str> = line.split("):").collect();
