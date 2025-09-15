@@ -1,6 +1,11 @@
-use std::u64;
-
 use chrono::NaiveDateTime;
+
+pub struct MoveOp<'a> {
+    pub source_dir_inode: u64,
+    pub source_file_name: &'a str,
+    pub target_dir_inode: u64,
+    pub target_file_name: &'a str,
+}
 
 /// Struct to hold the parsed line information
 pub struct Parser<'a> {
@@ -10,7 +15,7 @@ pub struct Parser<'a> {
     pub _id: u64,
     /// The operation performed
     pub operation: String,
-    /// The inode number, if any
+    /// The inode number, if any.
     pub inode: Option<u64>,
     /// The original line
     pub line: &'a str,
@@ -53,12 +58,87 @@ impl<'a> Parser<'a> {
             .ok_or("Could not find ',' in length operation line")?;
         let inode: u64 = numbers_comma_slice[..comma]
             .parse()
-            .map_err(|_| "Failed to parse inode into u64 in length peration.")?;
+            .map_err(|_| "Failed to parse inode into u64 in length operation")?;
         let length: u64 = numbers_comma_slice[comma + 1..]
             .parse()
-            .map_err(|_| "Failed to parse length into u64.")?;
+            .map_err(|_| "Failed to parse length into u64")?;
 
         Ok((inode, length))
+    }
+
+    /// Parse the MOVE operation and return source/target filename and directory inode
+    pub fn parse_move(&self) -> Result<MoveOp, &'static str> {
+        let start = self
+            .line
+            .find('(')
+            .ok_or("Could not find '(' in move operation line")?;
+        let end = self
+            .line
+            .find(')')
+            .ok_or("Could not find ')' in move operation line")?;
+        let numbers_comma_slice = &self.line[start + 1..end];
+
+        let mut parts = numbers_comma_slice.splitn(4, ',');
+
+        let source_dir_inode = parts
+            .next()
+            .ok_or("Missing source dir inode")?
+            .trim()
+            .parse::<u64>()
+            .map_err(|_| "Invalid source dir inode")?;
+
+        let source_file_name = parts
+            .next()
+            .ok_or("Missing source file name")?
+            .trim();
+
+        let target_dir_inode = parts
+            .next()
+            .ok_or("Missing target dir inode")?
+            .trim()
+            .parse::<u64>()
+            .map_err(|_| "Invalid target dir inode")?;
+
+        let target_file_name = parts
+            .next()
+            .ok_or("Missing target file name")?
+            .trim();
+
+        Ok(MoveOp {
+            source_dir_inode,
+            source_file_name,
+            target_dir_inode,
+            target_file_name,
+        })
+    }
+
+    /// Parse the UNLINK operation and return base path inode and filename
+    pub fn parse_unlink(&self) -> Result<(u64, &str), &'static str> {
+        let start = self
+            .line
+            .find('(')
+            .ok_or("Could not find '(' in unlink operation line")?;
+        let end = self
+            .line
+            .find(')')
+            .ok_or("Could not find ')' in unlink operation line")?;
+        let numbers_comma_slice = &self.line[start + 1..end];
+
+        let mut parts = numbers_comma_slice.splitn(2, ',');
+
+        let base_dir_inode = parts
+            .next()
+            .ok_or("Missing base dir inode in UNLINK operation")?
+            .trim()
+            .parse::<u64>()
+            .map_err(|_| "Invalid base dir inode")?;
+
+        let base_file_name = parts
+            .next()
+            .ok_or("Missing file name for UNLINK operation")?
+            .trim();
+
+        Ok((base_dir_inode, base_file_name))
     }
 
     /// Parse the line for a directory or file and update the counters.
@@ -69,6 +149,12 @@ impl<'a> Parser<'a> {
         } else if self.line.contains(",f,") {
             *files += 1;
         }
+    }
+
+    /// Parse the line for a directory and return true if it's a directory
+    /// Only works for CREATE operations.
+    pub fn is_dir(&self) -> bool {
+        self.line.contains(",d,")
     }
 }
 
@@ -133,7 +219,7 @@ fn parse_inode(line: &str, operation: &str) -> Option<u64> {
                 }
             }
         }
-        "CHECKSUM" => return None,
+        "CHECKSUM"|"SESSION" => return None,
         _ => (),
     }
     let parts: Vec<&str> = line.split("):").collect();
