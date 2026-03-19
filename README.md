@@ -1,3 +1,6 @@
+# leilfs-query
+Query .sfs journal files
+
 # Dependencies
 
 If possible, you should use the rustup tool to install, instead of installing
