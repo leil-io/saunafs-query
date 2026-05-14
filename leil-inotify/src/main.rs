@@ -16,7 +16,7 @@ struct Cli {
     /// Optional input file. Reads from stdin if not provided.
     file: Option<String>,
 
-    /// Root directory of SaunaFS. If not provided, returns raw inode numbers
+    /// Root directory of LeilFS. If not provided, returns raw inode numbers
     #[arg(short, long)]
     mountpoint: Option<String>
 }
@@ -250,7 +250,7 @@ async fn send_to_nats(str: String) -> Result<(), async_nats::Error> {
     let mut subscription =
         client.subscribe("opencloud.*").await?.take(3);
 
-    client.publish("opencloud.saunafs", str.clone().into()).await?;
+    client.publish("opencloud.leil", str.clone().into()).await?;
 
     while let Some(message) = subscription.next().await {
         println!(

@@ -1,4 +1,4 @@
-# leilfs-query
+# leil-query
 Query .sfs journal files
 
 # Dependencies

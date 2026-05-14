@@ -2,7 +2,7 @@ use std::process::{Command, exit};
 
 use chrono::NaiveDateTime;
 use clap::Parser;
-use saunafs_logquery::{TimestampRange, run};
+use leil_logquery::{TimestampRange, run};
 
 /// CLI parser
 /// Uses the `clap` library to parse command line arguments
